@@ -6,7 +6,9 @@ import (
 	"image/color"
 	_ "image/gif"  // Para suporte a GIF
 	_ "image/jpeg" // Para suporte a JPEG
-	_ "image/png"  // Para suporte a PNG
+	"image/png"
+	_ "image/png" // Para suporte a PNG
+	"log"
 	"os"
 	"sync"
 )
@@ -62,7 +64,8 @@ func ListingPixels(filePath string) ([]color.RGBA, error) {
 	}
 	return colors, nil
 }
-//ListingPixelsOrded this function iterates through an image and returns all the pixels in a slice of color.RGBA, this function preserves the order in which the pixels appear in the image
+
+// ListingPixelsOrded this function iterates through an image and returns all the pixels in a slice of color.RGBA, this function preserves the order in which the pixels appear in the image
 func ListingPixelOrded(filePath string) ([]color.RGBA, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -89,4 +92,67 @@ func ListingPixelOrded(filePath string) ([]color.RGBA, error) {
 
 	}
 	return colors, nil
+}
+
+func ExtractColorPalette(inputFilePath, outPutFilePath string) {
+	colors, err := ListingPixels(inputFilePath)
+	if err != nil {
+		log.Fatalln("Error while trying to read the image pixels: ", err)
+	}
+	var uniqueColors []color.RGBA
+	for _, color := range colors {
+		addColorIfNotExists(&uniqueColors, color)
+	}
+	for _, color := range uniqueColors {
+		fmt.Println(color.R, color.G, color.B, color.A)
+	}
+}
+
+func addColorIfNotExists(uniqueColors *[]color.RGBA, color color.RGBA) {
+	if len(*uniqueColors) == 0 {
+		*uniqueColors = append(*uniqueColors, color)
+		return
+	} else {
+		colorExists := false
+		for _, v := range *uniqueColors {
+			colorExists = v == color
+		}
+		if colorExists {
+			return
+		}
+		*uniqueColors = append(*uniqueColors, color)
+		return
+	}
+}
+
+// CreateImage3x3 is a temp fuction for dev tests
+func CreateImage3x3() error {
+	// Cria uma nova imagem RGBA de tamanho 3x3.
+	img := image.NewRGBA(image.Rect(0, 0, 3, 3))
+
+	// Define as cores para cada linha.
+	red := color.RGBA{R: 255, G: 0, B: 0, A: 255}   // Vermelho
+	green := color.RGBA{R: 0, G: 255, B: 0, A: 255} // Verde
+	blue := color.RGBA{R: 0, G: 0, B: 255, A: 255}  // Azul
+
+	// Preenche os pixels da imagem.
+	for x := 0; x < 3; x++ {
+		img.Set(x, 0, red)   // Primeira linha: vermelho
+		img.Set(x, 1, green) // Segunda linha: verde
+		img.Set(x, 2, blue)  // Terceira linha: azul
+	}
+
+	// Cria o arquivo para salvar a imagem.
+	file, err := os.Create("nova_imagem.png")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Salva a imagem no formato PNG.
+	if err := png.Encode(file, img); err != nil {
+		return err
+	}
+
+	return nil
 }

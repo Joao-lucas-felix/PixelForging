@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -15,14 +14,6 @@ func main() {
 	if erro != nil {
 		log.Fatal(erro)
 	}
-
-	clors, _ := pixelforging.ListingPixels("nova_imagem.png")
-	for _, color := range clors {
-		fmt.Println(color.R, color.G, color.B, color.A)
-	}
-
-	clors, _ = pixelforging.ListingPixelOrded("nova_imagem.png")
-	for _, color := range clors {
-		fmt.Println(color.R, color.G, color.B, color.A)
-	}
+	
+	pixelforging.ExtractColorPalette("nova_imagem.png", "")
 }
