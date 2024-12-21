@@ -13,16 +13,17 @@ import (
 	"sync"
 )
 
-const(
-	colorBlockWidth = 50
-	colorBlockHeight = 50 
-	colorsPerRow = 100
-)
+
 type lineProcessingUtil struct {
 	img    image.Image
 	bounds image.Rectangle
 }
 
+const(
+	colorBlockWidth = 50
+	colorBlockHeight = 50 
+	colorsPerRow = 100
+)
 // ListingPixels lists all the pixels in an image as a slice of `color.RGBA`.
 // This function uses a worker pool to process the image in parallel, so the order
 // of pixels in the result may not correspond to the original (row-column) order in the image.
