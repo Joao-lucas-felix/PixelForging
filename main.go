@@ -14,6 +14,6 @@ func main() {
 	if erro != nil {
 		log.Fatal(erro)
 	}
-	
-	pixelforging.ExtractColorPalette("nova_imagem.png", "")
+	pixelforging.CreateImage3x3()
+	pixelforging.ExtractColorPalette("imgesTest/input/test.png", "palette_test.png")
 }

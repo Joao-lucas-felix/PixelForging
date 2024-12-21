@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	_ "image/gif"  // Para suporte a GIF
 	_ "image/jpeg" // Para suporte a JPEG
 	"image/png"
@@ -12,6 +13,11 @@ import (
 	"sync"
 )
 
+const(
+	colorBlockWidth = 50
+	colorBlockHeight = 50 
+	colorsPerRow = 100
+)
 type lineProcessingUtil struct {
 	img    image.Image
 	bounds image.Rectangle
@@ -30,7 +36,7 @@ func ListingPixels(filePath string) ([]color.RGBA, error) {
 	}
 	var wg sync.WaitGroup
 	bounds := img.Bounds()
-	colorsChan := make(chan color.RGBA)
+	colorsChan := make(chan color.RGBA, bounds.Dx()*bounds.Dy()/32)
 	colors := make([]color.RGBA, 0, bounds.Dx()*bounds.Dy())
 
 	pools := 0
@@ -52,10 +58,12 @@ func ListingPixels(filePath string) ([]color.RGBA, error) {
 		}, &wg)
 	}
 
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		linesToProcess <- y
-	}
-	close(linesToProcess)
+	go func() {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			linesToProcess <- y
+		}
+		close(linesToProcess)
+	}()
 
 	go func() {
 		wg.Wait()
@@ -118,9 +126,130 @@ func ExtractColorPalette(inputFilePath, outPutFilePath string) {
 	}
 
 	uniqueColors := getUniqueColors(colors)
-	for _, color := range uniqueColors {
-		fmt.Println(color.R, color.G, color.B, color.A)
+	if err := createColorPalette(uniqueColors, outPutFilePath); err != nil {
+		log.Fatalln("Error wile trying to create the Collor Pallete", err)
 	}
+
+}
+
+func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string) error {
+
+	colorBlocks := make([]image.Image, 0, len(uniqueColors))
+	// Creates color blocks to create the palette
+	for _, color := range uniqueColors {
+		img := image.NewRGBA(image.Rect(0, 0, colorBlockWidth, colorBlockHeight))
+		for y := 0; y < img.Bounds().Dy(); y++ {
+			for x := 0; x < img.Bounds().Dx(); x++ {
+				img.Set(x, y, color)
+			}
+		}
+		colorBlocks = append(colorBlocks, img)
+	}
+	
+	var verticalColors []image.Image
+	horizontalColors := make([]image.Image, 0, len(colorBlocks)/4)
+	// {} {} {} {} {}
+	for _, color := range colorBlocks {
+		verticalColors = append(verticalColors, color)
+		if len(verticalColors) == colorsPerRow {
+			horizontalColor, err := concatenateImagesHorizontal(verticalColors...)
+			if err != nil {
+				return err
+			}
+			horizontalColors = append(horizontalColors, horizontalColor)
+			verticalColors = verticalColors[:0]
+		}
+	}
+	// Process any remaining vertical colors
+	if len(verticalColors) > 0 {
+		horizontalColor, err := concatenateImagesHorizontal(verticalColors...)
+		if err != nil {
+			return err
+		}
+		horizontalColors = append(horizontalColors, horizontalColor)
+	}
+
+	img, err := concatenateImagesVertical(horizontalColors...)
+	if err != nil {
+		return err
+	}
+	if err := saveImage(img, outPutFilePath); err != nil {
+		return err
+	}
+	return nil
+}
+
+func concatenateImagesHorizontal(imgs ...image.Image) (image.Image, error) {
+	if len(imgs) == 0 {
+		return nil, fmt.Errorf("no images to concatenate")
+	}
+	for _, img := range imgs {
+		if img == nil {
+			return nil, fmt.Errorf("nil image in input in horizontal")
+		}
+	}
+
+	// Define a nova largura e altura para a imagem concatenada
+	width := 0
+	for _, img := range imgs {
+		width += img.Bounds().Dx()
+	}
+
+	// Cria uma nova imagem vazia
+	newImage := image.NewRGBA(image.Rect(0, 0, width, colorBlockHeight))
+
+	offsetX := 0
+	for _, img := range imgs {
+		draw.Draw(newImage, img.Bounds().Add(image.Pt(offsetX, 0)), img, image.Point{}, draw.Src)
+		offsetX += img.Bounds().Dx()
+	}
+
+	return newImage, nil
+}
+
+func concatenateImagesVertical(imgs ...image.Image) (image.Image, error) {
+	if len(imgs) == 0 {
+		return nil, fmt.Errorf("no images to concatenate")
+	}
+	for _, img := range imgs {
+		if img == nil {
+			return nil, fmt.Errorf("nil image in input in vertical")
+		}
+	}
+
+	// Define a nova largura e altura para a imagem concatenada
+	height := 0
+	for _, img := range imgs {
+		height += img.Bounds().Dy()
+	}
+
+	// Cria uma nova imagem vazia
+	newImage := image.NewRGBA(image.Rect(0, 0, colorBlockWidth*colorsPerRow, height))
+
+	// Desenha a primeira imagem
+
+	offsetY := 0
+	// Desenha a segunda imagem, deslocada para baixo
+	for _, img := range imgs {
+		draw.Draw(newImage, img.Bounds().Add(image.Pt(0, offsetY)), img, image.Point{}, draw.Src)
+		offsetY += img.Bounds().Dy()
+	}
+	return newImage, nil
+}
+
+func saveImage(img image.Image, outPutFilePath string) error {
+	file, err := os.Create(outPutFilePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Salva a imagem no formato PNG.
+	if err := png.Encode(file, img); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // addColorIfNotExists adds a color to the slice of unique colors if it does not already exist.
