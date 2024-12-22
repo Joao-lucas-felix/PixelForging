@@ -9,21 +9,28 @@ import (
 	_ "image/jpeg" // Para suporte a JPEG
 	"image/png"
 	"log"
+	"math"
 	"os"
+	"sort"
 	"sync"
 )
-
 
 type lineProcessingUtil struct {
 	img    image.Image
 	bounds image.Rectangle
 }
 
-const(
-	colorBlockWidth = 50
-	colorBlockHeight = 50 
-	colorsPerRow = 100
+type HSLColor struct {
+	Color   color.RGBA
+	H, S, L float64
+}
+
+const (
+	colorBlockWidth  = 50
+	colorBlockHeight = 50
+	colorsPerRowDefault    = 3
 )
+
 // ListingPixels lists all the pixels in an image as a slice of `color.RGBA`.
 // This function uses a worker pool to process the image in parallel, so the order
 // of pixels in the result may not correspond to the original (row-column) order in the image.
@@ -120,25 +127,35 @@ func ListingPixelsOrdered(filePath string) ([]color.RGBA, error) {
 // Parameters:
 // - inputFilePath: the path to the input image file.
 // - outPutFilePath: the path to the output file (currently unused).
-func ExtractColorPalette(inputFilePath, outPutFilePath string) {
+func ExtractColorPalette(inputFilePath, outPutFilePath string, colorsPerRow, colorWidth, colorHeight int) {
 	colors, err := ListingPixels(inputFilePath)
 	if err != nil {
 		log.Fatalln("Error while trying to read the image pixels: ", err)
 	}
+	if colorsPerRow == 0 {
+		colorsPerRow = colorsPerRowDefault
+	}
+	if colorWidth == 0 {
+		colorWidth = colorBlockWidth
+	}
+	if colorHeight == 0 {
+		colorHeight = colorBlockHeight
+	}
 
 	uniqueColors := getUniqueColors(colors)
-	if err := createColorPalette(uniqueColors, outPutFilePath); err != nil {
+	organizedColors := organizeColorsByHSL(uniqueColors)
+	if err := createColorPalette(organizedColors, outPutFilePath, colorsPerRow, colorWidth, colorHeight); err != nil {
 		log.Fatalln("Error wile trying to create the Collor Pallete", err)
 	}
 
 }
 
-func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string) error {
+func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colorsPerRow, colorWidth, colorHeight int) error {
 
 	colorBlocks := make([]image.Image, 0, len(uniqueColors))
 	// Creates color blocks to create the palette
 	for _, color := range uniqueColors {
-		img := image.NewRGBA(image.Rect(0, 0, colorBlockWidth, colorBlockHeight))
+		img := image.NewRGBA(image.Rect(0, 0, colorWidth, colorHeight))
 		for y := 0; y < img.Bounds().Dy(); y++ {
 			for x := 0; x < img.Bounds().Dx(); x++ {
 				img.Set(x, y, color)
@@ -146,14 +163,14 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string) error 
 		}
 		colorBlocks = append(colorBlocks, img)
 	}
-	
+
 	var verticalColors []image.Image
 	horizontalColors := make([]image.Image, 0, len(colorBlocks)/4)
 	// {} {} {} {} {}
 	for _, color := range colorBlocks {
 		verticalColors = append(verticalColors, color)
 		if len(verticalColors) == colorsPerRow {
-			horizontalColor, err := concatenateImagesHorizontal(verticalColors...)
+			horizontalColor, err := concatenateImagesHorizontal(colorHeight, verticalColors...)
 			if err != nil {
 				return err
 			}
@@ -163,14 +180,14 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string) error 
 	}
 	// Process any remaining vertical colors
 	if len(verticalColors) > 0 {
-		horizontalColor, err := concatenateImagesHorizontal(verticalColors...)
+		horizontalColor, err := concatenateImagesHorizontal(colorHeight, verticalColors...)
 		if err != nil {
 			return err
 		}
 		horizontalColors = append(horizontalColors, horizontalColor)
 	}
 
-	img, err := concatenateImagesVertical(horizontalColors...)
+	img, err := concatenateImagesVertical(colorWidth, colorsPerRow, horizontalColors...)
 	if err != nil {
 		return err
 	}
@@ -180,7 +197,7 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string) error 
 	return nil
 }
 
-func concatenateImagesHorizontal(imgs ...image.Image) (image.Image, error) {
+func concatenateImagesHorizontal(colorHeight int ,imgs ...image.Image) (image.Image, error) {
 	if len(imgs) == 0 {
 		return nil, fmt.Errorf("no images to concatenate")
 	}
@@ -197,7 +214,7 @@ func concatenateImagesHorizontal(imgs ...image.Image) (image.Image, error) {
 	}
 
 	// Cria uma nova imagem vazia
-	newImage := image.NewRGBA(image.Rect(0, 0, width, colorBlockHeight))
+	newImage := image.NewRGBA(image.Rect(0, 0, width, colorHeight))
 
 	offsetX := 0
 	for _, img := range imgs {
@@ -208,7 +225,7 @@ func concatenateImagesHorizontal(imgs ...image.Image) (image.Image, error) {
 	return newImage, nil
 }
 
-func concatenateImagesVertical(imgs ...image.Image) (image.Image, error) {
+func concatenateImagesVertical(colorWidth, colorsPerRow int ,imgs ...image.Image) (image.Image, error) {
 	if len(imgs) == 0 {
 		return nil, fmt.Errorf("no images to concatenate")
 	}
@@ -225,7 +242,7 @@ func concatenateImagesVertical(imgs ...image.Image) (image.Image, error) {
 	}
 
 	// Cria uma nova imagem vazia
-	newImage := image.NewRGBA(image.Rect(0, 0, colorBlockWidth*colorsPerRow, height))
+	newImage := image.NewRGBA(image.Rect(0, 0, colorWidth*colorsPerRow, height))
 
 	// Desenha a primeira imagem
 
@@ -310,4 +327,58 @@ func CreateImage3x3() error {
 	}
 
 	return nil
+}
+// RGBAToHSL converts an color in RGBA space to HSL 
+func RGBAToHSL(c color.RGBA) (h, s, l float64) {
+	r := float64(c.R) / 255
+	g := float64(c.G) / 255
+	b := float64(c.B) / 255
+
+	max := math.Max(r, math.Max(g, b))
+	min := math.Min(r, math.Min(g, b))
+	l = (max + min) / 2
+
+	if max == min {
+		h, s = 0, 0 
+	} else {
+		delta := max - min
+		s = delta / (1 - math.Abs(2*l-1))
+		switch max {
+		case r:
+			h = math.Mod((g-b)/delta+6, 6)
+		case g:
+			h = (b-r)/delta + 2
+		case b:
+			h = (r-g)/delta + 4
+		}
+		h *= 60 
+	}
+
+	return
+}
+
+func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
+	hslColors := make([]HSLColor, len(colors))
+	for i, c := range colors {
+		h, s, l := RGBAToHSL(c)
+		hslColors[i] = HSLColor{Color: c, H: h, S: s, L: l}
+	}
+
+	// Ordenar por tonalidade (H), saturação (S) e luminosidade (L)
+	sort.Slice(hslColors, func(i, j int) bool {
+		if hslColors[i].L != hslColors[j].L {
+			return hslColors[i].L < hslColors[j].L
+		}
+		if hslColors[i].S != hslColors[j].S {
+			return hslColors[i].S < hslColors[j].S
+		}
+		return hslColors[i].H < hslColors[j].H
+	})
+
+	// Retorna a lista ordenada
+	sortedColors := make([]color.RGBA, len(colors))
+	for i, c := range hslColors {
+		sortedColors[i] = c.Color
+	}
+	return sortedColors
 }
