@@ -1,0 +1,2 @@
+ Command to extrat the color palette
+ ./PixelForging extract-palette --input-image imgesTest/input/LogoPixelForge.png --output-image palette_test2.png --colors-per-row 10

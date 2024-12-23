@@ -154,6 +154,12 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colors
 
 	colorBlocks := make([]image.Image, 0, len(uniqueColors))
 	// Creates color blocks to create the palette
+	
+	// refactor idea:
+	// i can use the worker pools pattern here
+	// 1 chanel of uniqueColors 
+	// the worker create the color block and add to a chanel of image
+	
 	for _, color := range uniqueColors {
 		img := image.NewRGBA(image.Rect(0, 0, colorWidth, colorHeight))
 		for y := 0; y < img.Bounds().Dy(); y++ {
