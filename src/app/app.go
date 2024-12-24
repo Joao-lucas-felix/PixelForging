@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-// Gerar um novo app
+// GenAPP gen a news cli app
 func GenAPP() *cli.App {
 	app := cli.NewApp()
 	app.Name = "Pixel Forging"

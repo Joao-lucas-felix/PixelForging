@@ -26,9 +26,9 @@ type HSLColor struct {
 }
 
 const (
-	colorBlockWidth  = 50
-	colorBlockHeight = 50
-	colorsPerRowDefault    = 3
+	colorBlockWidth     = 50
+	colorBlockHeight    = 50
+	colorsPerRowDefault = 3
 )
 
 // ListingPixels lists all the pixels in an image as a slice of `color.RGBA`.
@@ -60,7 +60,7 @@ func ListingPixels(filePath string) ([]color.RGBA, error) {
 
 	for i := 0; i < pools; i++ {
 		wg.Add(1)
-		go woker(linesToProcess, colorsChan, lineProcessingUtil{
+		go worker(linesToProcess, colorsChan, lineProcessingUtil{
 			img:    img,
 			bounds: bounds,
 		}, &wg)
@@ -84,7 +84,7 @@ func ListingPixels(filePath string) ([]color.RGBA, error) {
 	return colors, nil
 }
 
-func woker(linesChan chan int, colorsChan chan color.RGBA, util lineProcessingUtil, wg *sync.WaitGroup) {
+func worker(linesChan chan int, colorsChan chan color.RGBA, util lineProcessingUtil, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for y := range linesChan {
 		getPixelsOfImageLine(util.img, y, util.bounds, colorsChan)
@@ -153,18 +153,18 @@ func ExtractColorPalette(inputFilePath, outPutFilePath string, colorsPerRow, col
 func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colorsPerRow, colorWidth, colorHeight int) error {
 
 	colorBlocks := make([]image.Image, 0, len(uniqueColors))
-	// Creates color blocks to create the palette
-	
+	// Creates c blocks to create the palette
+
 	// refactor idea:
 	// i can use the worker pools pattern here
-	// 1 chanel of uniqueColors 
-	// the worker create the color block and add to a chanel of image
-	
-	for _, color := range uniqueColors {
+	// 1 chanel of uniqueColors
+	// the worker create the c block and add to a chanel of image
+
+	for _, c := range uniqueColors {
 		img := image.NewRGBA(image.Rect(0, 0, colorWidth, colorHeight))
 		for y := 0; y < img.Bounds().Dy(); y++ {
 			for x := 0; x < img.Bounds().Dx(); x++ {
-				img.Set(x, y, color)
+				img.Set(x, y, c)
 			}
 		}
 		colorBlocks = append(colorBlocks, img)
@@ -173,8 +173,8 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colors
 	var verticalColors []image.Image
 	horizontalColors := make([]image.Image, 0, len(colorBlocks)/4)
 	// {} {} {} {} {}
-	for _, color := range colorBlocks {
-		verticalColors = append(verticalColors, color)
+	for _, c := range colorBlocks {
+		verticalColors = append(verticalColors, c)
 		if len(verticalColors) == colorsPerRow {
 			horizontalColor, err := concatenateImagesHorizontal(colorHeight, verticalColors...)
 			if err != nil {
@@ -203,7 +203,7 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colors
 	return nil
 }
 
-func concatenateImagesHorizontal(colorHeight int ,imgs ...image.Image) (image.Image, error) {
+func concatenateImagesHorizontal(colorHeight int, imgs ...image.Image) (image.Image, error) {
 	if len(imgs) == 0 {
 		return nil, fmt.Errorf("no images to concatenate")
 	}
@@ -231,7 +231,7 @@ func concatenateImagesHorizontal(colorHeight int ,imgs ...image.Image) (image.Im
 	return newImage, nil
 }
 
-func concatenateImagesVertical(colorWidth, colorsPerRow int ,imgs ...image.Image) (image.Image, error) {
+func concatenateImagesVertical(colorWidth, colorsPerRow int, imgs ...image.Image) (image.Image, error) {
 	if len(imgs) == 0 {
 		return nil, fmt.Errorf("no images to concatenate")
 	}
@@ -266,7 +266,12 @@ func saveImage(img image.Image, outPutFilePath string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalln("Error while trying to close file", err)
+		}
+	}(file)
 
 	// Salva a imagem no formato PNG.
 	if err := png.Encode(file, img); err != nil {
@@ -279,8 +284,8 @@ func saveImage(img image.Image, outPutFilePath string) error {
 // addColorIfNotExists adds a color to the slice of unique colors if it does not already exist.
 func getUniqueColors(colors []color.RGBA) []color.RGBA {
 	uniqueColors := make(map[color.RGBA]struct{})
-	for _, color := range colors {
-		uniqueColors[color] = struct{}{}
+	for _, c := range colors {
+		uniqueColors[c] = struct{}{}
 	}
 	result := make([]color.RGBA, 0, len(uniqueColors))
 
@@ -295,7 +300,12 @@ func decodeImage(filePath string) (image.Image, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erro ao abrir a imagem: %w", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalln("Error while trying to close file", err)
+		}
+	}(file)
 	img, _, err := image.Decode(file)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao decodificar a imagem: %w", err)
@@ -325,7 +335,12 @@ func CreateImage3x3() error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatalln("Error while trying to close file", err)
+		}
+	}(file)
 
 	// Salva a imagem no formato PNG.
 	if err := png.Encode(file, img); err != nil {
@@ -334,22 +349,23 @@ func CreateImage3x3() error {
 
 	return nil
 }
-// RGBAToHSL converts an color in RGBA space to HSL 
+
+// RGBAToHSL converts an color in RGBA space to HSL
 func RGBAToHSL(c color.RGBA) (h, s, l float64) {
 	r := float64(c.R) / 255
 	g := float64(c.G) / 255
 	b := float64(c.B) / 255
 
-	max := math.Max(r, math.Max(g, b))
-	min := math.Min(r, math.Min(g, b))
-	l = (max + min) / 2
+	maxRGBA := math.Max(r, math.Max(g, b))
+	minRGBA := math.Min(r, math.Min(g, b))
+	l = (maxRGBA + minRGBA) / 2
 
-	if max == min {
-		h, s = 0, 0 
+	if maxRGBA == minRGBA {
+		h, s = 0, 0
 	} else {
-		delta := max - min
+		delta := maxRGBA - minRGBA
 		s = delta / (1 - math.Abs(2*l-1))
-		switch max {
+		switch maxRGBA {
 		case r:
 			h = math.Mod((g-b)/delta+6, 6)
 		case g:
@@ -357,7 +373,7 @@ func RGBAToHSL(c color.RGBA) (h, s, l float64) {
 		case b:
 			h = (r-g)/delta + 4
 		}
-		h *= 60 
+		h *= 60
 	}
 
 	return
