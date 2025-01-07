@@ -410,11 +410,8 @@ func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
 
 	// Ordenar por tonalidade (H), saturação (S) e luminosidade (L)
 	sort.Slice(hslColors, func(i, j int) bool {
-		if hslColors[i].L != hslColors[j].L {
+		if hslColors[i].H == hslColors[j].H {
 			return hslColors[i].L < hslColors[j].L
-		}
-		if hslColors[i].S != hslColors[j].S {
-			return hslColors[i].S < hslColors[j].S
 		}
 		return hslColors[i].H < hslColors[j].H
 	})
