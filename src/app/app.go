@@ -34,6 +34,7 @@ func GenAPP() *cli.App {
 		},
 		{
 			Name:  "extract-palette",
+			Aliases: []string{"extp",} ,
 			Usage: "Opens the image in the dir that you pass in the flag --input-image=\"[YOUR-IMAGE_PATH}\" and extract the color palette of the image and saves in the path that you pass in the flag --output-image=\"[OUTPUT_IMAGE_PATH]\"\nYou can pass 3 parans to configure the size of palette color image:\n\t--colors-per-row=\"[NUMBER_OF_COLORS_PER_ROW]\"\n\t--width=\"[WIDTH_OF_COLOR_BLOCK]\"\n\t--height=\"[HEIGHT_OF_COLOR_BLOCK]\" ",
 			Flags: []cli.Flag{
 				cli.StringFlag{
