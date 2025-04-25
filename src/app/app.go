@@ -85,9 +85,18 @@ func GenAPP() *cli.App {
 				if err != nil {
 					log.Fatalln("The param --height should be a int number")
 				}
+				image, err := pixelforging.DecodeImage(inputPath)
+				if err != nil {
+					log.Fatalln( err)
+				}
 
 				fmt.Println("We are forging your palette!")
-				pixelforging.ExtractColorPalette(inputPath, outputPath, colorsPerRow, width, height)
+
+				img := pixelforging.ExtractColorPalette(image, colorsPerRow, width, height)
+
+				if err := pixelforging.SaveImage(img, outputPath); err != nil {
+					log.Fatalln( err)
+				}
 			},
 		},
 	}

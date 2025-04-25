@@ -35,13 +35,8 @@ const (
 // This function uses a worker pool to process the image in parallel, so the order
 // of pixels in the result may not correspond to the original (row-column) order in the image.
 // Use ListingPixelsOrdered if you need the pixel order to match the image's structure.
-func ListingPixels(filePath string) ([]color.RGBA, error) {
+func ListingPixels(img image.Image) ([]color.RGBA, error) {
 
-	img, err := decodeImage(filePath)
-	if err != nil {
-		fmt.Println("Error while trying to open the image", err)
-		return nil, err
-	}
 	var wg sync.WaitGroup
 	bounds := img.Bounds()
 	colorsChan := make(chan color.RGBA, bounds.Dx()*bounds.Dy()/32)
@@ -103,7 +98,7 @@ func getPixelsOfImageLine(img image.Image, line int, bounds image.Rectangle, col
 // The function preserves the original order of the pixels in the image (row by row).
 func ListingPixelsOrdered(filePath string) ([]color.RGBA, error) {
 
-	img, err := decodeImage(filePath)
+	img, err := DecodeImage(filePath)
 	if err != nil {
 		fmt.Println("Error while trying to open the image", err)
 		return nil, err
@@ -127,8 +122,8 @@ func ListingPixelsOrdered(filePath string) ([]color.RGBA, error) {
 // Parameters:
 // - inputFilePath: the path to the input image file.
 // - outPutFilePath: the path to the output file (currently unused).
-func ExtractColorPalette(inputFilePath, outPutFilePath string, colorsPerRow, colorWidth, colorHeight int) {
-	colors, err := ListingPixels(inputFilePath)
+func ExtractColorPalette(image image.Image, colorsPerRow, colorWidth, colorHeight int) image.Image {
+	colors, err := ListingPixels(image)
 	if err != nil {
 		log.Fatalln("Error while trying to read the image pixels: ", err)
 	}
@@ -144,13 +139,14 @@ func ExtractColorPalette(inputFilePath, outPutFilePath string, colorsPerRow, col
 
 	uniqueColors := getUniqueColors(colors)
 	organizedColors := organizeColorsByHSL(uniqueColors)
-	if err := createColorPalette(organizedColors, outPutFilePath, colorsPerRow, colorWidth, colorHeight); err != nil {
+
+	if image, err = createColorPalette(organizedColors, colorsPerRow, colorWidth, colorHeight); err != nil {
 		log.Fatalln("Error wile trying to create the Collor Pallete", err)
 	}
-
+	return image
 }
 
-func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colorsPerRow, colorWidth, colorHeight int) error {
+func createColorPalette(uniqueColors []color.RGBA, colorsPerRow, colorWidth, colorHeight int) (image.Image, error) {
 
 	colorBlocks := make([]image.Image, 0, len(uniqueColors))
 	// Creates c blocks to create the palette
@@ -200,7 +196,7 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colors
 		if len(verticalColors) == colorsPerRow {
 			horizontalColor, err := concatenateImagesHorizontal(colorHeight, verticalColors...)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			horizontalColors = append(horizontalColors, horizontalColor)
 			verticalColors = verticalColors[:0]
@@ -210,19 +206,18 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colors
 	if len(verticalColors) > 0 {
 		horizontalColor, err := concatenateImagesHorizontal(colorHeight, verticalColors...)
 		if err != nil {
-			return err
+			return nil, err
+
 		}
 		horizontalColors = append(horizontalColors, horizontalColor)
 	}
 
 	img, err := concatenateImagesVertical(colorWidth, colorsPerRow, horizontalColors...)
 	if err != nil {
-		return err
+		return nil, err
+
 	}
-	if err := saveImage(img, outPutFilePath); err != nil {
-		return err
-	}
-	return nil
+	return img, nil
 }
 
 func concatenateImagesHorizontal(colorHeight int, imgs ...image.Image) (image.Image, error) {
@@ -283,7 +278,8 @@ func concatenateImagesVertical(colorWidth, colorsPerRow int, imgs ...image.Image
 	return newImage, nil
 }
 
-func saveImage(img image.Image, outPutFilePath string) error {
+// SaveImage save the image on Output file path
+func SaveImage(img image.Image, outPutFilePath string) error {
 	file, err := os.Create(outPutFilePath)
 	if err != nil {
 		return err
@@ -317,7 +313,8 @@ func getUniqueColors(colors []color.RGBA) []color.RGBA {
 	return result
 }
 
-func decodeImage(filePath string) (image.Image, error) {
+// DecodeImage open a image from a path
+func DecodeImage(filePath string) (image.Image, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao abrir a imagem: %w", err)
