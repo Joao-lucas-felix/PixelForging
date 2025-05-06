@@ -401,8 +401,10 @@ func RGBAToHSL(c color.RGBA) (h, s, l float64) {
 func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
 	hslColors := make([]HSLColor, len(colors))
 	for i, c := range colors {
-		h, s, l := RGBAToHSL(c)
-		hslColors[i] = HSLColor{Color: c, H: h, S: s, L: l}
+		if (c.R != 0 && c.G != 0 && c.B != 0 && c.A != 0){
+			h, s, l := RGBAToHSL(c)
+			hslColors[i] = HSLColor{Color: c, H: h, S: s, L: l}
+		}
 	}
 
 	// Ordenar por tonalidade (H), saturação (S) e luminosidade (L)
