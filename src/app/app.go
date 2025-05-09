@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/Joao-lucas-felix/PixelForging/src/backend/server"
 	pixelforging "github.com/Joao-lucas-felix/PixelForging/src/image-processing"
 	"github.com/urfave/cli"
 )
@@ -32,6 +33,7 @@ func GenAPP() *cli.App {
 				fmt.Println("Hello ", name)
 			},
 		},
+		// Extract palette command
 		{
 			Name:  "extract-palette",
 			Usage: "Opens the image in the dir that you pass in the flag --input-image=\"[YOUR-IMAGE_PATH}\" and extract the color palette of the image and saves in the path that you pass in the flag --output-image=\"[OUTPUT_IMAGE_PATH]\"\nYou can pass 3 parans to configure the size of palette color image:\n\t--colors-per-row=\"[NUMBER_OF_COLORS_PER_ROW]\"\n\t--width=\"[WIDTH_OF_COLOR_BLOCK]\"\n\t--height=\"[HEIGHT_OF_COLOR_BLOCK]\" ",
@@ -97,6 +99,21 @@ func GenAPP() *cli.App {
 				if err := pixelforging.SaveImage(img, outputPath); err != nil {
 					log.Fatalln( err)
 				}
+			},
+		},
+		// Init server command
+		{
+			Name:  "start-gRPC-server",
+			Usage: "Starts the gRPC server on port 9090",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "port",
+					Value: "9090",
+				},
+			},
+			Action: func(c *cli.Context) {
+				port := c.String("port")
+				server.BoostrapServer(port)
 			},
 		},
 	}
