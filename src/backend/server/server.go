@@ -72,11 +72,11 @@ func (s Server) ExtractPalette(srv pixelforging_grpc.PixelForging_ExtractPalette
 
 // BoostrapServer starts the gRPC server on port 9090
 // @Description: Starts the gRPC server on port 9090
-func BoostrapServer() {
+func BoostrapServer(port string) {
 	log.Println("Starting gRPC server...")
 	// Create a new gRPC server
 
-	listner, err := net.Listen("tcp", ":9090")
+	listner, err := net.Listen("tcp", ":" + port)
 	if err != nil {
 		log.Fatalln("Error starting server: ", err)
 	}
