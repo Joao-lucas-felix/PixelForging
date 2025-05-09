@@ -104,7 +104,7 @@ func GenAPP() *cli.App {
 		// Init server command
 		{
 			Name:  "start-gRPC-server",
-			Usage: "Starts the gRPC server on port 9090",
+			Usage: "Starts the gRPC server on a port that you pass in the flag --port=\"[PORT]\" the default port is 9090", 
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "port",
