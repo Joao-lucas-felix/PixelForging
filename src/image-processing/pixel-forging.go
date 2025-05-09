@@ -1,18 +1,24 @@
 package pixelforging
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
-	_ "image/gif"  // Para suporte a GIF
-	_ "image/jpeg" // Para suporte a JPEG
-	"image/png"
+	"image/gif"  // GIF
+	"image/jpeg" // JPEG
+	"image/png"  // PNG
+	"io"
 	"log"
 	"math"
 	"os"
 	"sort"
 	"sync"
+
+	bmp "golang.org/x/image/bmp"   // BMP
+	tiff "golang.org/x/image/tiff" // TIFF
+	// WebP
 )
 
 type lineProcessingUtil struct {
@@ -401,7 +407,7 @@ func RGBAToHSL(c color.RGBA) (h, s, l float64) {
 func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
 	hslColors := make([]HSLColor, len(colors))
 	for i, c := range colors {
-		if (c.R != 0 && c.G != 0 && c.B != 0 && c.A != 0){
+		if c.R != 0 && c.G != 0 && c.B != 0 && c.A != 0 {
 			h, s, l := RGBAToHSL(c)
 			hslColors[i] = HSLColor{Color: c, H: h, S: s, L: l}
 		}
@@ -421,4 +427,77 @@ func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
 		sortedColors[i] = c.Color
 	}
 	return sortedColors
+}
+
+// BytesToImage decodes an image from a byte slice.
+// It detects the image format and decodes it accordingly.
+// It returns the decoded image, its format, and any error encountered.
+// The function supports JPEG, PNG, GIF, BMP, TIFF, and WebP formats.
+// If the format is not recognized, it attempts a generic decode.
+// The function uses a bytes.Reader to read the image data from the byte slice.
+// It returns an error if the image cannot be decoded or if the format is not supported.
+func BytesToImage(imgBytes []byte,fm string) (image.Image, string, error) {
+	imgReader := bytes.NewReader(imgBytes)
+
+	// Tenta detectar o formato
+	_, format, err := image.DecodeConfig(imgReader)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Volta ao início do reader
+	imgReader.Seek(0, io.SeekStart)
+
+	// Decodifica usando o decoder específico para melhor controle
+	switch format {
+	case "jpeg":
+		img, err := jpeg.Decode(imgReader)
+		return img, "", err
+	case "png":
+		img, err := png.Decode(imgReader)
+		return img, "", err
+	case "gif":
+		img, err := gif.Decode(imgReader)
+		return img, "", err
+	case "bmp":
+		img, err := bmp.Decode(imgReader)
+		return img, "", err
+	case "tiff":
+		img, err := tiff.Decode(imgReader)
+		return img, "", err
+	default:
+		// Tenta decodificação genérica
+		return image.Decode(imgReader)
+	}
+}
+
+// ImageToBytes converte uma image.Image para bytes no formato especificado
+// format: "jpeg", "png", "gif", "bmp", "tiff", "webp"
+func ImageToBytes(img image.Image, format string) ([]byte, error) {
+	var buf bytes.Buffer
+	var err error
+
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90})
+	case "png":
+		err = png.Encode(&buf, img)
+	case "gif":
+		// O pacote image/gif tem funções mais complexas para GIFs animados
+		// Esta é uma implementação básica para GIFs estáticos
+		err = gif.Encode(&buf, img, &gif.Options{})
+	case "bmp":
+		err = bmp.Encode(&buf, img)
+	case "tiff":
+		err = tiff.Encode(&buf, img, &tiff.Options{})
+	default:
+		// Default para PNG se o formato não for reconhecido
+		err = png.Encode(&buf, img)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
