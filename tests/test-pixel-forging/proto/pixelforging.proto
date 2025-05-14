@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package pixelforging_grpc;
+
+option go_package = "./src/backend/pb/pixelforging-grpc";
+
+
+service PixelForging {
+    rpc ExtractPalette(stream ExtractPaletteInput) returns (stream ExtractPaletteOutput);
+}
+
+message ExtractPaletteInput {
+    bytes fileBytes = 1;
+    string fileName = 2;
+    string fileType = 3;
+}
+
+message ExtractPaletteOutput {
+    bytes paletteBytes = 1;
+    string fileName = 2;
+    string fileType = 3; 
+}
+
+
+
+
+
