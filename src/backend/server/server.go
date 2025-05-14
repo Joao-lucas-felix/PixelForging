@@ -47,7 +47,7 @@ func (s Server) ExtractPalette(srv pixelforging_grpc.PixelForging_ExtractPalette
 		return err
 	}
 	// Extract palette from image
-	img = pixelforging.ExtractColorPalette(img, 3, 50, 50)
+	img = pixelforging.ExtractColorPalette(img, 3, 0, 0, 0 )
 	bytesOutput, err := pixelforging.ImageToBytes(img, fileType)
 	if err != nil {
 		log.Println("Error converting image to bytes: ", err)
