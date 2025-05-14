@@ -9,6 +9,20 @@ import (
 	pixelforging "github.com/Joao-lucas-felix/PixelForging/src/image-processing"
 	"github.com/urfave/cli"
 )
+const (
+	color = "\033[38;5;117m"
+	colorReset = "\033[0m"
+	logo = color+`
+██████╗ ██╗██╗  ██╗███████╗██╗     ███████╗ ██████╗ ██████╗  ██████╗ ██╗███╗   ██╗ ██████╗ 
+██╔══██╗██║╚██╗██╔╝██╔════╝██║     ██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██║████╗  ██║██╔════╝ 
+██████╔╝██║ ╚███╔╝ █████╗  ██║     █████╗  ██║   ██║██████╔╝██║  ███╗██║██╔██╗ ██║██║  ███╗
+██╔═══╝ ██║ ██╔██╗ ██╔══╝  ██║     ██╔══╝  ██║   ██║██╔══██╗██║   ██║██║██║╚██╗██║██║   ██║
+██║     ██║██╔╝ ██╗███████╗███████╗██║     ╚██████╔╝██║  ██║╚██████╔╝██║██║ ╚████║╚██████╔╝
+╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+																					
+`+colorReset
+)
+
 
 // GenAPP gen a news cli app
 func GenAPP() *cli.App {
@@ -64,6 +78,7 @@ func GenAPP() *cli.App {
 				},
 			},
 			Action: func(c *cli.Context) {
+				fmt.Println(logo)
 				inputPath := c.String("input-image")
 				outputPath := c.String("output-image")
 				colorsPerRowS := c.String("colors-per-row")
@@ -121,6 +136,7 @@ func GenAPP() *cli.App {
 				},
 			},
 			Action: func(c *cli.Context) {
+				fmt.Println(logo)
 				port := c.String("port")
 				server.BoostrapServer(port)
 			},
