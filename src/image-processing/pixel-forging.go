@@ -35,6 +35,7 @@ const (
 	colorBlockWidth     = 50
 	colorBlockHeight    = 50
 	colorsPerRowDefault = 3
+	colorNumDefault     = 6
 )
 
 // ListingPixels lists all the pixels in an image as a slice of `color.RGBA`.
@@ -128,7 +129,7 @@ func ListingPixelsOrdered(filePath string) ([]color.RGBA, error) {
 // Parameters:
 // - inputFilePath: the path to the input image file.
 // - outPutFilePath: the path to the output file (currently unused).
-func ExtractColorPalette(image image.Image, colorsPerRow, colorWidth, colorHeight int) image.Image {
+func ExtractColorPalette(image image.Image, colorsPerRow, colorWidth, colorHeight, colorNum int) image.Image {
 	colors, err := ListingPixels(image)
 	if err != nil {
 		log.Fatalln("Error while trying to read the image pixels: ", err)
@@ -142,9 +143,12 @@ func ExtractColorPalette(image image.Image, colorsPerRow, colorWidth, colorHeigh
 	if colorHeight == 0 {
 		colorHeight = colorBlockHeight
 	}
+	if colorNum == 0 {
+		colorNum = colorNumDefault
+	}
 
 	uniqueColors := getUniqueColors(colors)
-	organizedColors := organizeColorsByHSL(uniqueColors)
+	organizedColors := organizeColorsByHSL(uniqueColors[:colorNum])
 
 	if image, err = createColorPalette(organizedColors, colorsPerRow, colorWidth, colorHeight); err != nil {
 		log.Fatalln("Error wile trying to create the Collor Pallete", err)
@@ -153,50 +157,15 @@ func ExtractColorPalette(image image.Image, colorsPerRow, colorWidth, colorHeigh
 }
 
 func createColorPalette(uniqueColors []color.RGBA, colorsPerRow, colorWidth, colorHeight int) (image.Image, error) {
-
-	colorBlocks := make([]image.Image, 0, len(uniqueColors))
-	// Creates c blocks to create the palette
-
-	// refactor idea:
-	// i can use the worker pools pattern here
-	// 1 chanel of uniqueColors
-	// the worker create the c block and add to a chanel of image
-	var wg sync.WaitGroup
-	colorsChan := make(chan color.RGBA, len(uniqueColors))
-	imagesChan := make(chan image.Image, len(uniqueColors))
-	for i := 0; i < 32; i++ {
-		wg.Add(1)
-		go func(colorsChan chan color.RGBA) {
-			defer wg.Done()
-			for c := range colorsChan {
-				img := image.NewRGBA(image.Rect(0, 0, colorWidth, colorHeight))
-				for y := 0; y < img.Bounds().Dy(); y++ {
-					for x := 0; x < img.Bounds().Dx(); x++ {
-						img.Set(x, y, c)
-					}
-				}
-				imagesChan <- img
-			}
-		}(colorsChan)
+	// Criar blocos de cores sequencialmente
+	colorBlocks := make([]image.Image, len(uniqueColors))
+	for i, c := range uniqueColors {
+		img := image.NewRGBA(image.Rect(0, 0, colorWidth, colorHeight))
+		draw.Draw(img, img.Bounds(), &image.Uniform{c}, image.Point{}, draw.Src)
+		colorBlocks[i] = img
 	}
-
-	for _, c := range uniqueColors {
-		colorsChan <- c
-	}
-	close(colorsChan)
-
-	go func() {
-		for img := range imagesChan {
-			colorBlocks = append(colorBlocks, img)
-		}
-		fmt.Println("Parallel processing complete")
-	}()
-	wg.Wait()
-	close(imagesChan)
-
 	var verticalColors []image.Image
-	horizontalColors := make([]image.Image, 0, len(colorBlocks)/4)
-	// {} {} {} {} {}
+	horizontalColors := make([]image.Image, 0, len(colorBlocks)/colorsPerRow)
 	for _, c := range colorBlocks {
 		verticalColors = append(verticalColors, c)
 		if len(verticalColors) == colorsPerRow {
@@ -221,8 +190,8 @@ func createColorPalette(uniqueColors []color.RGBA, colorsPerRow, colorWidth, col
 	img, err := concatenateImagesVertical(colorWidth, colorsPerRow, horizontalColors...)
 	if err != nil {
 		return nil, err
-
 	}
+
 	return img, nil
 }
 
@@ -305,18 +274,29 @@ func SaveImage(img image.Image, outPutFilePath string) error {
 	return nil
 }
 
-// addColorIfNotExists adds a color to the slice of unique colors if it does not already exist.
+// getUniqueColors returns a slice of unique colors from the input slice.
+// It counts the frequency of each color and sorts them in descending order.
 func getUniqueColors(colors []color.RGBA) []color.RGBA {
-	uniqueColors := make(map[color.RGBA]struct{})
+	// Contar quantas vezes cada cor aparece
+	colorCounts := make(map[color.RGBA]int)
 	for _, c := range colors {
-		uniqueColors[c] = struct{}{}
+		if c != (color.RGBA{0, 0, 0, 0}) {
+			colorCounts[c]++
+		}
 	}
-	result := make([]color.RGBA, 0, len(uniqueColors))
 
-	for key := range uniqueColors {
-		result = append(result, key)
+	// Criar uma slice com as cores únicas
+	uniqueColors := make([]color.RGBA, 0, len(colorCounts))
+	for color := range colorCounts {
+		uniqueColors = append(uniqueColors, color)
 	}
-	return result
+
+	// Ordenar as cores pela frequência (decrescente)
+	sort.Slice(uniqueColors, func(i, j int) bool {
+		return colorCounts[uniqueColors[i]] > colorCounts[uniqueColors[j]]
+	})
+
+	return uniqueColors
 }
 
 // DecodeImage open a image from a path
@@ -436,7 +416,7 @@ func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
 // If the format is not recognized, it attempts a generic decode.
 // The function uses a bytes.Reader to read the image data from the byte slice.
 // It returns an error if the image cannot be decoded or if the format is not supported.
-func BytesToImage(imgBytes []byte,fm string) (image.Image, string, error) {
+func BytesToImage(imgBytes []byte, fm string) (image.Image, string, error) {
 	imgReader := bytes.NewReader(imgBytes)
 
 	// Tenta detectar o formato
