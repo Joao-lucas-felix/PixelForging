@@ -36,7 +36,7 @@ func GenAPP() *cli.App {
 		// Extract palette command
 		{
 			Name:  "extract-palette",
-			Usage: "Opens the image in the dir that you pass in the flag --input-image=\"[YOUR-IMAGE_PATH}\" and extract the color palette of the image and saves in the path that you pass in the flag --output-image=\"[OUTPUT_IMAGE_PATH]\"\nYou can pass 3 parans to configure the size of palette color image:\n\t--colors-per-row=\"[NUMBER_OF_COLORS_PER_ROW]\"\n\t--width=\"[WIDTH_OF_COLOR_BLOCK]\"\n\t--height=\"[HEIGHT_OF_COLOR_BLOCK]\" ",
+			Usage: "Opens the image in the dir that you pass in the flag --input-image=\"[YOUR-IMAGE_PATH}\" and extract the color palette of the image and saves in the path that you pass in the flag --output-image=\"[OUTPUT_IMAGE_PATH]\"\nYou can pass 3 parans to configure the size of palette color image:\n\t--colors-per-row=\"[NUMBER_OF_COLORS_PER_ROW]\"\n\t--width=\"[WIDTH_OF_COLOR_BLOCK]\"\n\t--height=\"[HEIGHT_OF_COLOR_BLOCK]\" \n  --colors-num=\"[NUMBER_OF_COLORS]\"\n\nThe default values are:\n\t--colors-per-row=3\n\t--width=0\n\t--height=0\n\t--colors-num=0",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "input-image",
@@ -58,6 +58,10 @@ func GenAPP() *cli.App {
 					Name:  "height",
 					Value: "0",
 				},
+				cli.StringFlag{
+					Name:  "colors-num",
+					Value: "0",
+				},
 			},
 			Action: func(c *cli.Context) {
 				inputPath := c.String("input-image")
@@ -65,6 +69,7 @@ func GenAPP() *cli.App {
 				colorsPerRowS := c.String("colors-per-row")
 				widthS := c.String("width")
 				heightS := c.String("height")
+				colorNumS := c.String("colors-num")
 
 				if inputPath == "" {
 					log.Fatalln("The param --input-image can not be blanck")
@@ -87,24 +92,28 @@ func GenAPP() *cli.App {
 				if err != nil {
 					log.Fatalln("The param --height should be a int number")
 				}
+				colorNum, err := strconv.Atoi(colorNumS)
+				if err != nil {
+					log.Fatalln("The param --colors-num should be a int number")
+				}
 				image, err := pixelforging.DecodeImage(inputPath)
 				if err != nil {
-					log.Fatalln( err)
+					log.Fatalln(err)
 				}
 
 				fmt.Println("We are forging your palette!")
 
-				img := pixelforging.ExtractColorPalette(image, colorsPerRow, width, height)
+				img := pixelforging.ExtractColorPalette(image, colorsPerRow, width, height, colorNum)
 
 				if err := pixelforging.SaveImage(img, outputPath); err != nil {
-					log.Fatalln( err)
+					log.Fatalln(err)
 				}
 			},
 		},
 		// Init server command
 		{
 			Name:  "start-gRPC-server",
-			Usage: "Starts the gRPC server on a port that you pass in the flag --port=\"[PORT]\" the default port is 9090", 
+			Usage: "Starts the gRPC server on a port that you pass in the flag --port=\"[PORT]\" the default port is 9090",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "port",
