@@ -1,18 +1,24 @@
 package pixelforging
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
-	_ "image/gif"  // Para suporte a GIF
-	_ "image/jpeg" // Para suporte a JPEG
-	"image/png"
+	"image/gif"  // GIF
+	"image/jpeg" // JPEG
+	"image/png"  // PNG
+	"io"
 	"log"
 	"math"
 	"os"
 	"sort"
 	"sync"
+
+	bmp "golang.org/x/image/bmp"   // BMP
+	tiff "golang.org/x/image/tiff" // TIFF
+	// WebP
 )
 
 type lineProcessingUtil struct {
@@ -29,19 +35,15 @@ const (
 	colorBlockWidth     = 50
 	colorBlockHeight    = 50
 	colorsPerRowDefault = 3
+	colorNumDefault     = 6
 )
 
 // ListingPixels lists all the pixels in an image as a slice of `color.RGBA`.
 // This function uses a worker pool to process the image in parallel, so the order
 // of pixels in the result may not correspond to the original (row-column) order in the image.
 // Use ListingPixelsOrdered if you need the pixel order to match the image's structure.
-func ListingPixels(filePath string) ([]color.RGBA, error) {
+func ListingPixels(img image.Image) ([]color.RGBA, error) {
 
-	img, err := decodeImage(filePath)
-	if err != nil {
-		fmt.Println("Error while trying to open the image", err)
-		return nil, err
-	}
 	var wg sync.WaitGroup
 	bounds := img.Bounds()
 	colorsChan := make(chan color.RGBA, bounds.Dx()*bounds.Dy()/32)
@@ -103,7 +105,7 @@ func getPixelsOfImageLine(img image.Image, line int, bounds image.Rectangle, col
 // The function preserves the original order of the pixels in the image (row by row).
 func ListingPixelsOrdered(filePath string) ([]color.RGBA, error) {
 
-	img, err := decodeImage(filePath)
+	img, err := DecodeImage(filePath)
 	if err != nil {
 		fmt.Println("Error while trying to open the image", err)
 		return nil, err
@@ -127,8 +129,8 @@ func ListingPixelsOrdered(filePath string) ([]color.RGBA, error) {
 // Parameters:
 // - inputFilePath: the path to the input image file.
 // - outPutFilePath: the path to the output file (currently unused).
-func ExtractColorPalette(inputFilePath, outPutFilePath string, colorsPerRow, colorWidth, colorHeight int) {
-	colors, err := ListingPixels(inputFilePath)
+func ExtractColorPalette(image image.Image, colorsPerRow, colorWidth, colorHeight, colorNum int) image.Image {
+	colors, err := ListingPixels(image)
 	if err != nil {
 		log.Fatalln("Error while trying to read the image pixels: ", err)
 	}
@@ -141,66 +143,35 @@ func ExtractColorPalette(inputFilePath, outPutFilePath string, colorsPerRow, col
 	if colorHeight == 0 {
 		colorHeight = colorBlockHeight
 	}
+	if colorNum == 0 {
+		colorNum = colorNumDefault
+	}
 
 	uniqueColors := getUniqueColors(colors)
-	organizedColors := organizeColorsByHSL(uniqueColors)
-	if err := createColorPalette(organizedColors, outPutFilePath, colorsPerRow, colorWidth, colorHeight); err != nil {
+	organizedColors := organizeColorsByHSL(uniqueColors[:colorNum])
+
+	if image, err = createColorPalette(organizedColors, colorsPerRow, colorWidth, colorHeight); err != nil {
 		log.Fatalln("Error wile trying to create the Collor Pallete", err)
 	}
-
+	return image
 }
 
-func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colorsPerRow, colorWidth, colorHeight int) error {
-
-	colorBlocks := make([]image.Image, 0, len(uniqueColors))
-	// Creates c blocks to create the palette
-
-	// refactor idea:
-	// i can use the worker pools pattern here
-	// 1 chanel of uniqueColors
-	// the worker create the c block and add to a chanel of image
-	var wg sync.WaitGroup
-	colorsChan := make(chan color.RGBA, len(uniqueColors))
-	imagesChan := make(chan image.Image, len(uniqueColors))
-	for i := 0; i < 32; i++ {
-		wg.Add(1)
-		go func(colorsChan chan color.RGBA) {
-			defer wg.Done()
-			for c := range colorsChan {
-				img := image.NewRGBA(image.Rect(0, 0, colorWidth, colorHeight))
-				for y := 0; y < img.Bounds().Dy(); y++ {
-					for x := 0; x < img.Bounds().Dx(); x++ {
-						img.Set(x, y, c)
-					}
-				}
-				imagesChan <- img
-			}
-		}(colorsChan)
+func createColorPalette(uniqueColors []color.RGBA, colorsPerRow, colorWidth, colorHeight int) (image.Image, error) {
+	// Criar blocos de cores sequencialmente
+	colorBlocks := make([]image.Image, len(uniqueColors))
+	for i, c := range uniqueColors {
+		img := image.NewRGBA(image.Rect(0, 0, colorWidth, colorHeight))
+		draw.Draw(img, img.Bounds(), &image.Uniform{c}, image.Point{}, draw.Src)
+		colorBlocks[i] = img
 	}
-
-	for _, c := range uniqueColors {
-		colorsChan <- c
-	}
-	close(colorsChan)
-
-	go func() {
-		for img := range imagesChan {
-			colorBlocks = append(colorBlocks, img)
-		}
-		fmt.Println("Parallel processing complete")
-	}()
-	wg.Wait()
-	close(imagesChan)
-
 	var verticalColors []image.Image
-	horizontalColors := make([]image.Image, 0, len(colorBlocks)/4)
-	// {} {} {} {} {}
+	horizontalColors := make([]image.Image, 0, len(colorBlocks)/colorsPerRow)
 	for _, c := range colorBlocks {
 		verticalColors = append(verticalColors, c)
 		if len(verticalColors) == colorsPerRow {
 			horizontalColor, err := concatenateImagesHorizontal(colorHeight, verticalColors...)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			horizontalColors = append(horizontalColors, horizontalColor)
 			verticalColors = verticalColors[:0]
@@ -210,19 +181,18 @@ func createColorPalette(uniqueColors []color.RGBA, outPutFilePath string, colors
 	if len(verticalColors) > 0 {
 		horizontalColor, err := concatenateImagesHorizontal(colorHeight, verticalColors...)
 		if err != nil {
-			return err
+			return nil, err
+
 		}
 		horizontalColors = append(horizontalColors, horizontalColor)
 	}
 
 	img, err := concatenateImagesVertical(colorWidth, colorsPerRow, horizontalColors...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := saveImage(img, outPutFilePath); err != nil {
-		return err
-	}
-	return nil
+
+	return img, nil
 }
 
 func concatenateImagesHorizontal(colorHeight int, imgs ...image.Image) (image.Image, error) {
@@ -283,7 +253,8 @@ func concatenateImagesVertical(colorWidth, colorsPerRow int, imgs ...image.Image
 	return newImage, nil
 }
 
-func saveImage(img image.Image, outPutFilePath string) error {
+// SaveImage save the image on Output file path
+func SaveImage(img image.Image, outPutFilePath string) error {
 	file, err := os.Create(outPutFilePath)
 	if err != nil {
 		return err
@@ -303,21 +274,33 @@ func saveImage(img image.Image, outPutFilePath string) error {
 	return nil
 }
 
-// addColorIfNotExists adds a color to the slice of unique colors if it does not already exist.
+// getUniqueColors returns a slice of unique colors from the input slice.
+// It counts the frequency of each color and sorts them in descending order.
 func getUniqueColors(colors []color.RGBA) []color.RGBA {
-	uniqueColors := make(map[color.RGBA]struct{})
+	// Contar quantas vezes cada cor aparece
+	colorCounts := make(map[color.RGBA]int)
 	for _, c := range colors {
-		uniqueColors[c] = struct{}{}
+		if c != (color.RGBA{0, 0, 0, 0}) {
+			colorCounts[c]++
+		}
 	}
-	result := make([]color.RGBA, 0, len(uniqueColors))
 
-	for key := range uniqueColors {
-		result = append(result, key)
+	// Criar uma slice com as cores únicas
+	uniqueColors := make([]color.RGBA, 0, len(colorCounts))
+	for color := range colorCounts {
+		uniqueColors = append(uniqueColors, color)
 	}
-	return result
+
+	// Ordenar as cores pela frequência (decrescente)
+	sort.Slice(uniqueColors, func(i, j int) bool {
+		return colorCounts[uniqueColors[i]] > colorCounts[uniqueColors[j]]
+	})
+
+	return uniqueColors
 }
 
-func decodeImage(filePath string) (image.Image, error) {
+// DecodeImage open a image from a path
+func DecodeImage(filePath string) (image.Image, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao abrir a imagem: %w", err)
@@ -404,8 +387,10 @@ func RGBAToHSL(c color.RGBA) (h, s, l float64) {
 func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
 	hslColors := make([]HSLColor, len(colors))
 	for i, c := range colors {
-		h, s, l := RGBAToHSL(c)
-		hslColors[i] = HSLColor{Color: c, H: h, S: s, L: l}
+		if c.R != 0 && c.G != 0 && c.B != 0 && c.A != 0 {
+			h, s, l := RGBAToHSL(c)
+			hslColors[i] = HSLColor{Color: c, H: h, S: s, L: l}
+		}
 	}
 
 	// Ordenar por tonalidade (H), saturação (S) e luminosidade (L)
@@ -422,4 +407,77 @@ func organizeColorsByHSL(colors []color.RGBA) []color.RGBA {
 		sortedColors[i] = c.Color
 	}
 	return sortedColors
+}
+
+// BytesToImage decodes an image from a byte slice.
+// It detects the image format and decodes it accordingly.
+// It returns the decoded image, its format, and any error encountered.
+// The function supports JPEG, PNG, GIF, BMP, TIFF, and WebP formats.
+// If the format is not recognized, it attempts a generic decode.
+// The function uses a bytes.Reader to read the image data from the byte slice.
+// It returns an error if the image cannot be decoded or if the format is not supported.
+func BytesToImage(imgBytes []byte, fm string) (image.Image, string, error) {
+	imgReader := bytes.NewReader(imgBytes)
+
+	// Tenta detectar o formato
+	_, format, err := image.DecodeConfig(imgReader)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Volta ao início do reader
+	imgReader.Seek(0, io.SeekStart)
+
+	// Decodifica usando o decoder específico para melhor controle
+	switch format {
+	case "jpeg":
+		img, err := jpeg.Decode(imgReader)
+		return img, "", err
+	case "png":
+		img, err := png.Decode(imgReader)
+		return img, "", err
+	case "gif":
+		img, err := gif.Decode(imgReader)
+		return img, "", err
+	case "bmp":
+		img, err := bmp.Decode(imgReader)
+		return img, "", err
+	case "tiff":
+		img, err := tiff.Decode(imgReader)
+		return img, "", err
+	default:
+		// Tenta decodificação genérica
+		return image.Decode(imgReader)
+	}
+}
+
+// ImageToBytes converte uma image.Image para bytes no formato especificado
+// format: "jpeg", "png", "gif", "bmp", "tiff", "webp"
+func ImageToBytes(img image.Image, format string) ([]byte, error) {
+	var buf bytes.Buffer
+	var err error
+
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90})
+	case "png":
+		err = png.Encode(&buf, img)
+	case "gif":
+		// O pacote image/gif tem funções mais complexas para GIFs animados
+		// Esta é uma implementação básica para GIFs estáticos
+		err = gif.Encode(&buf, img, &gif.Options{})
+	case "bmp":
+		err = bmp.Encode(&buf, img)
+	case "tiff":
+		err = tiff.Encode(&buf, img, &tiff.Options{})
+	default:
+		// Default para PNG se o formato não for reconhecido
+		err = png.Encode(&buf, img)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
