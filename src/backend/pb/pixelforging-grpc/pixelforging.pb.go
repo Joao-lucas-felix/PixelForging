@@ -22,10 +22,16 @@ const (
 )
 
 type ExtractPaletteInput struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FileBytes     []byte                 `protobuf:"bytes,1,opt,name=fileBytes,proto3" json:"fileBytes,omitempty"`
-	FileName      string                 `protobuf:"bytes,2,opt,name=fileName,proto3" json:"fileName,omitempty"`
-	FileType      string                 `protobuf:"bytes,3,opt,name=fileType,proto3" json:"fileType,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	FileBytes []byte                 `protobuf:"bytes,1,opt,name=fileBytes,proto3" json:"fileBytes,omitempty"`
+	FileName  string                 `protobuf:"bytes,2,opt,name=fileName,proto3" json:"fileName,omitempty"`
+	FileType  string                 `protobuf:"bytes,3,opt,name=fileType,proto3" json:"fileType,omitempty"`
+	// The following fields are optional and can be set to 0 if not needed
+	// The following fields configure shape of the palette
+	ColorsPerRow  int32 `protobuf:"varint,4,opt,name=colorsPerRow,proto3" json:"colorsPerRow,omitempty"`
+	ColorWidth    int32 `protobuf:"varint,5,opt,name=colorWidth,proto3" json:"colorWidth,omitempty"`
+	ColorHeight   int32 `protobuf:"varint,6,opt,name=colorHeight,proto3" json:"colorHeight,omitempty"`
+	ColorNum      int32 `protobuf:"varint,7,opt,name=colorNum,proto3" json:"colorNum,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -79,6 +85,34 @@ func (x *ExtractPaletteInput) GetFileType() string {
 		return x.FileType
 	}
 	return ""
+}
+
+func (x *ExtractPaletteInput) GetColorsPerRow() int32 {
+	if x != nil {
+		return x.ColorsPerRow
+	}
+	return 0
+}
+
+func (x *ExtractPaletteInput) GetColorWidth() int32 {
+	if x != nil {
+		return x.ColorWidth
+	}
+	return 0
+}
+
+func (x *ExtractPaletteInput) GetColorHeight() int32 {
+	if x != nil {
+		return x.ColorHeight
+	}
+	return 0
+}
+
+func (x *ExtractPaletteInput) GetColorNum() int32 {
+	if x != nil {
+		return x.ColorNum
+	}
+	return 0
 }
 
 type ExtractPaletteOutput struct {
@@ -145,11 +179,17 @@ var File_proto_pixelforging_proto protoreflect.FileDescriptor
 
 const file_proto_pixelforging_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/pixelforging.proto\x12\x11pixelforging_grpc\"k\n" +
+	"\x18proto/pixelforging.proto\x12\x11pixelforging_grpc\"\xed\x01\n" +
 	"\x13ExtractPaletteInput\x12\x1c\n" +
 	"\tfileBytes\x18\x01 \x01(\fR\tfileBytes\x12\x1a\n" +
 	"\bfileName\x18\x02 \x01(\tR\bfileName\x12\x1a\n" +
-	"\bfileType\x18\x03 \x01(\tR\bfileType\"r\n" +
+	"\bfileType\x18\x03 \x01(\tR\bfileType\x12\"\n" +
+	"\fcolorsPerRow\x18\x04 \x01(\x05R\fcolorsPerRow\x12\x1e\n" +
+	"\n" +
+	"colorWidth\x18\x05 \x01(\x05R\n" +
+	"colorWidth\x12 \n" +
+	"\vcolorHeight\x18\x06 \x01(\x05R\vcolorHeight\x12\x1a\n" +
+	"\bcolorNum\x18\a \x01(\x05R\bcolorNum\"r\n" +
 	"\x14ExtractPaletteOutput\x12\"\n" +
 	"\fpaletteBytes\x18\x01 \x01(\fR\fpaletteBytes\x12\x1a\n" +
 	"\bfileName\x18\x02 \x01(\tR\bfileName\x12\x1a\n" +

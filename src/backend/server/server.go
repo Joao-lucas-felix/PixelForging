@@ -16,8 +16,8 @@ type Server struct {
 
 func (s Server) ExtractPalette(srv pixelforging_grpc.PixelForging_ExtractPaletteServer) error {
 	var pixelArt []byte
-	var fileName string
-	var fileType string
+	var fileName, fileType string
+	var colorsPerRow, colorWidth, colorHeight, colorNum int32
 
 	log.Println("Extracting palette...")
 	for {
@@ -34,12 +34,17 @@ func (s Server) ExtractPalette(srv pixelforging_grpc.PixelForging_ExtractPalette
 		pixelArt = append(pixelArt, data.GetFileBytes()...)
 		fileName = data.GetFileName()
 		fileType = data.GetFileType()
+
+		// Get the color palette parameters
+		colorsPerRow = data.GetColorsPerRow()
+		colorHeight = data.GetColorHeight()
+		colorWidth = data.GetColorWidth()
+		colorNum = data.GetColorNum()
 	}
 	log.Println("Received file:\t", fileName)
 	log.Println("File type:\t", fileType)
 	log.Println("File size:\t", len(pixelArt))
 
-	
 	// Convert bytes to image
 	img, _, err := pixelforging.BytesToImage(pixelArt, fileType)
 	if err != nil {
@@ -47,13 +52,14 @@ func (s Server) ExtractPalette(srv pixelforging_grpc.PixelForging_ExtractPalette
 		return err
 	}
 	// Extract palette from image
-	img = pixelforging.ExtractColorPalette(img, 3, 0, 0, 0 )
+	img = pixelforging.ExtractColorPalette(img, int(colorsPerRow), int(colorWidth), int(colorHeight), int(colorNum))
+	
 	bytesOutput, err := pixelforging.ImageToBytes(img, fileType)
 	if err != nil {
 		log.Println("Error converting image to bytes: ", err)
 		return err
 	}
-	// Implementar a logica de chunks 
+	// Implementar a logica de chunks
 	log.Println("Palette extracted successfully")
 	log.Println("Sending data...")
 	for _, bytes := range bytesOutput {
@@ -76,7 +82,7 @@ func BoostrapServer(port string) {
 	log.Println("Starting gRPC server...")
 	// Create a new gRPC server
 
-	listner, err := net.Listen("tcp", ":" + port)
+	listner, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatalln("Error starting server: ", err)
 	}
