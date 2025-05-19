@@ -22,7 +22,7 @@ requests = chunks.map do |chunk|
   PixelforgingGrpc::ExtractPaletteInput.new(
     fileBytes: chunk,
     fileName: file_name, 
-    fileType: file_type
+    fileType: file_type,
   )
 end
 outputbytes = []
