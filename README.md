@@ -89,7 +89,7 @@ Valores padrão:
 
 <p align="center">
   <img src="tests/input/Logo-Pixel-Forging.png" alt="Logo do Projeto Pixel Forging Versão Inicial" width="200">
-  <img src="tests/output/output2.png" alt="Paleta de cores do Projeto Pixel Forging Versão Inicial" width="200">
+  <img src="tests/out/output2.png" alt="Paleta de cores do Projeto Pixel Forging Versão Inicial" width="200">
 </p>
 
 
