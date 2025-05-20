@@ -87,11 +87,11 @@ Valores padrão:
 
 ### Exemplo de extração de Paleta:
 
-<p align="center">
-  <img src="tests/input/Logo-Pixel-Forging.png" alt="Logo do Projeto Pixel Forging Versão Inicial" width="200">
-  <img src="tests/out/output2.png" alt="Paleta de cores do Projeto Pixel Forging Versão Inicial" width="200">
-</p>
-
+<div align="center">
+  <img src="tests/input/Logo-Pixel-Forging.png" alt="Logo do Projeto Pixel Forging Versão Inicial" width="200" style="display: block; margin: 0 auto;">
+  
+  <img src="tests/out/output2.png" alt="Paleta de cores do Projeto Pixel Forging Versão Inicial" width="200" style="border-radius: 8px; display: block; margin: 0 auto; margin-top: 20px;">
+</div>
 
 ### Serviço gRPC
 
