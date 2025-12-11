@@ -7,6 +7,12 @@ option go_package = "./src/backend/pb/pixelforging-grpc";
 
 service PixelForging {
     rpc ExtractPalette(stream ExtractPaletteInput) returns (stream ExtractPaletteOutput);
+    rpc Wake(WakeMsg) returns (UpMsg);
+}
+
+message WakeMsg {}
+message UpMsg { 
+    string up = 1; 
 }
 
 message ExtractPaletteInput {

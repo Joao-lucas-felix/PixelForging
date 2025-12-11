@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"io"
 	"log"
 	"net"
@@ -53,7 +54,7 @@ func (s Server) ExtractPalette(srv pixelforging_grpc.PixelForging_ExtractPalette
 	}
 	// Extract palette from image
 	img = pixelforging.ExtractColorPalette(img, int(colorsPerRow), int(colorWidth), int(colorHeight), int(colorNum))
-	
+
 	bytesOutput, err := pixelforging.ImageToBytes(img, fileType)
 	if err != nil {
 		log.Println("Error converting image to bytes: ", err)
@@ -74,6 +75,14 @@ func (s Server) ExtractPalette(srv pixelforging_grpc.PixelForging_ExtractPalette
 		}
 	}
 	return nil
+}
+// Wake Verify if the server is up 
+// @Description: Verify if the server is up
+func (s Server) Wake(context.Context, *pixelforging_grpc.WakeMsg) (*pixelforging_grpc.UpMsg, error) {
+	log.Println("The server is WakeUp!")
+	return &pixelforging_grpc.UpMsg{
+		Up: "Up",
+	}, nil
 }
 
 // BoostrapServer starts the gRPC server on port 9090
