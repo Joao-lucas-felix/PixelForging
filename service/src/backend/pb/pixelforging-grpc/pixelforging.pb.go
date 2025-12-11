@@ -21,6 +21,86 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type WakeMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WakeMsg) Reset() {
+	*x = WakeMsg{}
+	mi := &file_proto_pixelforging_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WakeMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WakeMsg) ProtoMessage() {}
+
+func (x *WakeMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_pixelforging_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WakeMsg.ProtoReflect.Descriptor instead.
+func (*WakeMsg) Descriptor() ([]byte, []int) {
+	return file_proto_pixelforging_proto_rawDescGZIP(), []int{0}
+}
+
+type UpMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Up            string                 `protobuf:"bytes,1,opt,name=up,proto3" json:"up,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpMsg) Reset() {
+	*x = UpMsg{}
+	mi := &file_proto_pixelforging_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpMsg) ProtoMessage() {}
+
+func (x *UpMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_pixelforging_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpMsg.ProtoReflect.Descriptor instead.
+func (*UpMsg) Descriptor() ([]byte, []int) {
+	return file_proto_pixelforging_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *UpMsg) GetUp() string {
+	if x != nil {
+		return x.Up
+	}
+	return ""
+}
+
 type ExtractPaletteInput struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	FileBytes []byte                 `protobuf:"bytes,1,opt,name=fileBytes,proto3" json:"fileBytes,omitempty"`
@@ -38,7 +118,7 @@ type ExtractPaletteInput struct {
 
 func (x *ExtractPaletteInput) Reset() {
 	*x = ExtractPaletteInput{}
-	mi := &file_proto_pixelforging_proto_msgTypes[0]
+	mi := &file_proto_pixelforging_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -50,7 +130,7 @@ func (x *ExtractPaletteInput) String() string {
 func (*ExtractPaletteInput) ProtoMessage() {}
 
 func (x *ExtractPaletteInput) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_pixelforging_proto_msgTypes[0]
+	mi := &file_proto_pixelforging_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -63,7 +143,7 @@ func (x *ExtractPaletteInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtractPaletteInput.ProtoReflect.Descriptor instead.
 func (*ExtractPaletteInput) Descriptor() ([]byte, []int) {
-	return file_proto_pixelforging_proto_rawDescGZIP(), []int{0}
+	return file_proto_pixelforging_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ExtractPaletteInput) GetFileBytes() []byte {
@@ -126,7 +206,7 @@ type ExtractPaletteOutput struct {
 
 func (x *ExtractPaletteOutput) Reset() {
 	*x = ExtractPaletteOutput{}
-	mi := &file_proto_pixelforging_proto_msgTypes[1]
+	mi := &file_proto_pixelforging_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -138,7 +218,7 @@ func (x *ExtractPaletteOutput) String() string {
 func (*ExtractPaletteOutput) ProtoMessage() {}
 
 func (x *ExtractPaletteOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_pixelforging_proto_msgTypes[1]
+	mi := &file_proto_pixelforging_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -151,7 +231,7 @@ func (x *ExtractPaletteOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtractPaletteOutput.ProtoReflect.Descriptor instead.
 func (*ExtractPaletteOutput) Descriptor() ([]byte, []int) {
-	return file_proto_pixelforging_proto_rawDescGZIP(), []int{1}
+	return file_proto_pixelforging_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ExtractPaletteOutput) GetPaletteBytes() []byte {
@@ -179,7 +259,10 @@ var File_proto_pixelforging_proto protoreflect.FileDescriptor
 
 const file_proto_pixelforging_proto_rawDesc = "" +
 	"\n" +
-	"\x18proto/pixelforging.proto\x12\x11pixelforging_grpc\"\xed\x01\n" +
+	"\x18proto/pixelforging.proto\x12\x11pixelforging_grpc\"\t\n" +
+	"\aWakeMsg\"\x17\n" +
+	"\x05UpMsg\x12\x0e\n" +
+	"\x02up\x18\x01 \x01(\tR\x02up\"\xed\x01\n" +
 	"\x13ExtractPaletteInput\x12\x1c\n" +
 	"\tfileBytes\x18\x01 \x01(\fR\tfileBytes\x12\x1a\n" +
 	"\bfileName\x18\x02 \x01(\tR\bfileName\x12\x1a\n" +
@@ -193,9 +276,10 @@ const file_proto_pixelforging_proto_rawDesc = "" +
 	"\x14ExtractPaletteOutput\x12\"\n" +
 	"\fpaletteBytes\x18\x01 \x01(\fR\fpaletteBytes\x12\x1a\n" +
 	"\bfileName\x18\x02 \x01(\tR\bfileName\x12\x1a\n" +
-	"\bfileType\x18\x03 \x01(\tR\bfileType2u\n" +
+	"\bfileType\x18\x03 \x01(\tR\bfileType2\xb3\x01\n" +
 	"\fPixelForging\x12e\n" +
-	"\x0eExtractPalette\x12&.pixelforging_grpc.ExtractPaletteInput\x1a'.pixelforging_grpc.ExtractPaletteOutput(\x010\x01B$Z\"./src/backend/pb/pixelforging-grpcb\x06proto3"
+	"\x0eExtractPalette\x12&.pixelforging_grpc.ExtractPaletteInput\x1a'.pixelforging_grpc.ExtractPaletteOutput(\x010\x01\x12<\n" +
+	"\x04Wake\x12\x1a.pixelforging_grpc.WakeMsg\x1a\x18.pixelforging_grpc.UpMsgB$Z\"./src/backend/pb/pixelforging-grpcb\x06proto3"
 
 var (
 	file_proto_pixelforging_proto_rawDescOnce sync.Once
@@ -209,16 +293,20 @@ func file_proto_pixelforging_proto_rawDescGZIP() []byte {
 	return file_proto_pixelforging_proto_rawDescData
 }
 
-var file_proto_pixelforging_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_pixelforging_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_pixelforging_proto_goTypes = []any{
-	(*ExtractPaletteInput)(nil),  // 0: pixelforging_grpc.ExtractPaletteInput
-	(*ExtractPaletteOutput)(nil), // 1: pixelforging_grpc.ExtractPaletteOutput
+	(*WakeMsg)(nil),              // 0: pixelforging_grpc.WakeMsg
+	(*UpMsg)(nil),                // 1: pixelforging_grpc.UpMsg
+	(*ExtractPaletteInput)(nil),  // 2: pixelforging_grpc.ExtractPaletteInput
+	(*ExtractPaletteOutput)(nil), // 3: pixelforging_grpc.ExtractPaletteOutput
 }
 var file_proto_pixelforging_proto_depIdxs = []int32{
-	0, // 0: pixelforging_grpc.PixelForging.ExtractPalette:input_type -> pixelforging_grpc.ExtractPaletteInput
-	1, // 1: pixelforging_grpc.PixelForging.ExtractPalette:output_type -> pixelforging_grpc.ExtractPaletteOutput
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 0: pixelforging_grpc.PixelForging.ExtractPalette:input_type -> pixelforging_grpc.ExtractPaletteInput
+	0, // 1: pixelforging_grpc.PixelForging.Wake:input_type -> pixelforging_grpc.WakeMsg
+	3, // 2: pixelforging_grpc.PixelForging.ExtractPalette:output_type -> pixelforging_grpc.ExtractPaletteOutput
+	1, // 3: pixelforging_grpc.PixelForging.Wake:output_type -> pixelforging_grpc.UpMsg
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -235,7 +323,7 @@ func file_proto_pixelforging_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_pixelforging_proto_rawDesc), len(file_proto_pixelforging_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

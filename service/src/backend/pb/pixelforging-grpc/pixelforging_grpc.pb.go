@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	PixelForging_ExtractPalette_FullMethodName = "/pixelforging_grpc.PixelForging/ExtractPalette"
+	PixelForging_Wake_FullMethodName           = "/pixelforging_grpc.PixelForging/Wake"
 )
 
 // PixelForgingClient is the client API for PixelForging service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PixelForgingClient interface {
 	ExtractPalette(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ExtractPaletteInput, ExtractPaletteOutput], error)
+	Wake(ctx context.Context, in *WakeMsg, opts ...grpc.CallOption) (*UpMsg, error)
 }
 
 type pixelForgingClient struct {
@@ -50,11 +52,22 @@ func (c *pixelForgingClient) ExtractPalette(ctx context.Context, opts ...grpc.Ca
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type PixelForging_ExtractPaletteClient = grpc.BidiStreamingClient[ExtractPaletteInput, ExtractPaletteOutput]
 
+func (c *pixelForgingClient) Wake(ctx context.Context, in *WakeMsg, opts ...grpc.CallOption) (*UpMsg, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpMsg)
+	err := c.cc.Invoke(ctx, PixelForging_Wake_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PixelForgingServer is the server API for PixelForging service.
 // All implementations must embed UnimplementedPixelForgingServer
 // for forward compatibility.
 type PixelForgingServer interface {
 	ExtractPalette(grpc.BidiStreamingServer[ExtractPaletteInput, ExtractPaletteOutput]) error
+	Wake(context.Context, *WakeMsg) (*UpMsg, error)
 	mustEmbedUnimplementedPixelForgingServer()
 }
 
@@ -67,6 +80,9 @@ type UnimplementedPixelForgingServer struct{}
 
 func (UnimplementedPixelForgingServer) ExtractPalette(grpc.BidiStreamingServer[ExtractPaletteInput, ExtractPaletteOutput]) error {
 	return status.Errorf(codes.Unimplemented, "method ExtractPalette not implemented")
+}
+func (UnimplementedPixelForgingServer) Wake(context.Context, *WakeMsg) (*UpMsg, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Wake not implemented")
 }
 func (UnimplementedPixelForgingServer) mustEmbedUnimplementedPixelForgingServer() {}
 func (UnimplementedPixelForgingServer) testEmbeddedByValue()                      {}
@@ -96,13 +112,36 @@ func _PixelForging_ExtractPalette_Handler(srv interface{}, stream grpc.ServerStr
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type PixelForging_ExtractPaletteServer = grpc.BidiStreamingServer[ExtractPaletteInput, ExtractPaletteOutput]
 
+func _PixelForging_Wake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WakeMsg)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PixelForgingServer).Wake(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PixelForging_Wake_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PixelForgingServer).Wake(ctx, req.(*WakeMsg))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PixelForging_ServiceDesc is the grpc.ServiceDesc for PixelForging service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var PixelForging_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "pixelforging_grpc.PixelForging",
 	HandlerType: (*PixelForgingServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Wake",
+			Handler:    _PixelForging_Wake_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "ExtractPalette",
