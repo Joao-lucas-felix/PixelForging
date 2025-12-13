@@ -8,7 +8,7 @@ WORKDIR /app
 # Copia apenas arquivos necessários para resolver dependências
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle gradle
-
+RUN chmod +x gradlew
 # Baixa dependências (cache eficiente)
 RUN ./gradlew dependencies --no-daemon
 
