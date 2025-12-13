@@ -1,2 +1,0 @@
- Command to extrat the color palette
- ./PixelForging extract-palette --input-image tests/input/image.png --output-image tests/out/palette_test-n.png 
