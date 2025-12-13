@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/wake")
-public class GreentingController {
-    private static final Log log = LogFactory.getLog(GreentingController.class);
+public class GreetingController {
+    private static final Log log = LogFactory.getLog(GreetingController.class);
 
     @GetMapping
     public ResponseEntity<StatusDto> wake() {
