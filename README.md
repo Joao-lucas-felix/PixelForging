@@ -1,6 +1,6 @@
 # PixelForging
 <p align="center">
-  <img src="service/tests/input/Logo-Pixel-Forging.png" alt="Logo do Projeto Pixel Forging Versão Inicial" width="200">
+  <img src="tests/input/Logo-Pixel-Forging.png" alt="Logo do Projeto Pixel Forging Versão Inicial" width="200">
 </p>
 PixelForging é uma ferramenta de linha de comando (CLI) e servidor gRPC para processamento digital de imagens, com foco em extração de paletas de cores.
 
